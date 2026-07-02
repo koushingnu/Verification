@@ -45,8 +45,22 @@ export async function GET(request: NextRequest) {
     }
     console.error("[search] failed", err);
     return NextResponse.json(
-      { error: "検索中にエラーが発生しました。サーバー接続情報をご確認ください。" },
+      { error: "検索中にエラーが発生しました。サーバー接続情報をご確認ください。", ...debugDetail(err) },
       { status: 502 }
     );
   }
+}
+
+/**
+ * 環境変数 DEBUG_API_ERRORS=1 のときのみ、エラーの詳細をレスポンスに含める。
+ * FTP接続の切り分け（タイムアウト/接続拒否/認証失敗など）をVercelのログを見ずに
+ * 素早く行うためのデバッグ用途。本番の常時運用では無効にしておくことを推奨する。
+ */
+function debugDetail(err: unknown): { detail?: string } {
+  if (process.env.DEBUG_API_ERRORS !== "1") return {};
+  if (err instanceof Error) {
+    const code = (err as NodeJS.ErrnoException).code;
+    return { detail: `${err.name}: ${err.message}${code ? ` (code: ${code})` : ""}` };
+  }
+  return { detail: String(err) };
 }

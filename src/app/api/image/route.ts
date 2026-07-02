@@ -55,6 +55,15 @@ export async function GET(request: NextRequest) {
       return new Response("不正なパスが指定されました", { status: 400 });
     }
     console.error("[image] failed", err);
-    return new Response("画像の取得に失敗しました", { status: 502 });
+    const detail = process.env.DEBUG_API_ERRORS === "1" ? `\n${describeError(err)}` : "";
+    return new Response(`画像の取得に失敗しました${detail}`, { status: 502 });
   }
+}
+
+function describeError(err: unknown): string {
+  if (err instanceof Error) {
+    const code = (err as NodeJS.ErrnoException).code;
+    return `${err.name}: ${err.message}${code ? ` (code: ${code})` : ""}`;
+  }
+  return String(err);
 }
