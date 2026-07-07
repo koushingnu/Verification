@@ -152,6 +152,13 @@ export async function browseDirectory(server: ServerConfig, rawRelativePath: str
 
     for (const entry of list) {
       if (entry.name === "." || entry.name === "..") continue;
+
+      // フォルダと画像ファイル以外（.htaccessなどの設定ファイル・隠しファイル等）は
+      // 一覧にすら出さない。名前が見えるだけでも不要な情報開示になるため、
+      // APIレスポンスの時点で除外する。
+      const isImage = entry.isFile && isImagePath(entry.name);
+      if (!entry.isDirectory && !isImage) continue;
+
       if (entries.length >= MAX_BROWSE_ENTRIES) {
         truncated = true;
         break;
@@ -163,7 +170,7 @@ export async function browseDirectory(server: ServerConfig, rawRelativePath: str
         size: entry.size,
         modifiedAt: entry.modifiedAt ? entry.modifiedAt.toISOString() : null,
         isDirectory: entry.isDirectory,
-        isImage: entry.isFile && isImagePath(entry.name),
+        isImage,
       });
     }
 

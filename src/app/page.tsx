@@ -13,7 +13,7 @@ export default function Home() {
   const [servers, setServers] = useState<PublicServerInfo[]>([]);
   const [serversError, setServersError] = useState<string | null>(null);
   const [serverId, setServerId] = useState<string>("");
-  const [tab, setTab] = useState<Tab>("browse");
+  const [tab, setTab] = useState<Tab>("search");
   const [previewItem, setPreviewItem] = useState<ImageMeta | null>(null);
 
   useEffect(() => {
@@ -66,20 +66,20 @@ export default function Home() {
 
           <div className="flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
             <button
-              onClick={() => setTab("browse")}
-              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-                tab === "browse" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              フォルダを見る
-            </button>
-            <button
               onClick={() => setTab("search")}
               className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
                 tab === "search" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
               }`}
             >
               キーワード検索
+            </button>
+            <button
+              onClick={() => setTab("browse")}
+              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                tab === "browse" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              フォルダを見る
             </button>
           </div>
         </div>
