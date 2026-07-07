@@ -4,6 +4,7 @@ import path from "node:path";
 import { getServerById } from "@/lib/servers";
 import { fetchFileStream, UnsafePathError } from "@/lib/ftp";
 import { isImagePath } from "@/lib/pathSafety";
+import { describeError } from "@/lib/apiError";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -58,12 +59,4 @@ export async function GET(request: NextRequest) {
     const detail = process.env.DEBUG_API_ERRORS === "1" ? `\n${describeError(err)}` : "";
     return new Response(`画像の取得に失敗しました${detail}`, { status: 502 });
   }
-}
-
-function describeError(err: unknown): string {
-  if (err instanceof Error) {
-    const code = (err as NodeJS.ErrnoException).code;
-    return `${err.name}: ${err.message}${code ? ` (code: ${code})` : ""}`;
-  }
-  return String(err);
 }

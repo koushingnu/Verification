@@ -9,8 +9,9 @@ Next.js (App Router) 製で、Vercel上での稼働を想定しています。DB
 ## 主な機能
 
 - 登録済みのさくらサーバー（最大10台まで拡張可）から対象を選択
-- ファイル名・パスに対するキーワード部分一致検索（再帰的にフォルダを走査）
-- 検索結果のサムネイル表示・拡大プレビュー
+- **フォルダを見るタブ（デフォルト表示）**: キーワードなしで、その場のフォルダ構成・画像をそのまま一覧表示。パンくずリストでフォルダを移動できる
+- **キーワード検索タブ**: ファイル名・パスに対する部分一致検索（再帰的にフォルダを走査）
+- 検索結果・フォルダ内一覧どちらからもサムネイル表示・拡大プレビューが可能
 - 画像のダウンロード（ブラウザ経由の保存。Vercelはサーバーレスのため、アプリ側にファイルは保持しません）
 - アプリ全体にBasic認証を必須で適用（社内限定アクセス）
 
@@ -93,15 +94,21 @@ npm run dev
 src/
   proxy.ts                    # Basic認証（全ルート対象。旧middleware.ts、Next.js 16での新名称）
   lib/
-    servers.ts                # 環境変数からサーバー一覧を構築
-    pathSafety.ts              # パストラバーサル対策・拡張子チェック
-    ftp.ts                     # FTPS接続・再帰検索・ファイルストリーム取得
-    format.ts                  # 表示用フォーマット関数
+    servers.ts                 # 環境変数からサーバー一覧を構築
+    pathSafety.ts               # パストラバーサル対策・拡張子チェック
+    ftp.ts                      # FTPS接続・再帰検索・フォルダ一覧・ファイルストリーム取得
+    apiError.ts                 # エラー詳細のデバッグ表示ヘルパー
+    format.ts                   # 表示用フォーマット関数
+  components/
+    BrowsePanel.tsx             # フォルダ閲覧タブ（パンくず移動・一覧表示）
+    SearchPanel.tsx              # キーワード検索タブ
+    ImagePreviewModal.tsx        # 画像プレビュー/ダウンロードのモーダル
   app/
-    page.tsx                   # 検索UI（サーバー選択・キーワード検索・プレビュー・保存）
-    api/servers/route.ts       # サーバー一覧API
-    api/search/route.ts        # キーワード検索API
-    api/image/route.ts         # 画像プレビュー/ダウンロードAPI
+    page.tsx                    # タブ切り替え・サーバー選択の親コンポーネント
+    api/servers/route.ts        # サーバー一覧API
+    api/browse/route.ts         # フォルダ1階層分の一覧取得API
+    api/search/route.ts         # キーワード検索API
+    api/image/route.ts          # 画像プレビュー/ダウンロードAPI
 ```
 
 ## トラブルシューティング: Vercel上でのみ `/api/search` や `/api/image` が失敗する（502）

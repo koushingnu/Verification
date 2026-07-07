@@ -10,12 +10,27 @@ export class UnsafePathError extends Error {
   }
 }
 
-export interface SearchResultItem {
+export interface ImageMeta {
   /** ベースディレクトリからの相対パス（posix区切り） */
   path: string;
   name: string;
   size: number;
   modifiedAt: string | null;
+}
+
+export type SearchResultItem = ImageMeta;
+
+export interface BrowseEntry extends ImageMeta {
+  isDirectory: boolean;
+  /** 画像として配信可能なファイルかどうか（ディレクトリの場合は false） */
+  isImage: boolean;
+}
+
+export interface BrowseResult {
+  /** 実際に閲覧したディレクトリの相対パス（正規化済み） */
+  path: string;
+  entries: BrowseEntry[];
+  truncated: boolean;
 }
 
 export interface SearchOptions {
@@ -114,6 +129,53 @@ export async function searchFiles(server: ServerConfig, options: SearchOptions):
   }
 
   return { items, truncated, scannedCount };
+}
+
+const MAX_BROWSE_ENTRIES = Number(process.env.BROWSE_MAX_ENTRIES ?? 500);
+
+/**
+ * 指定ディレクトリ直下（1階層のみ）のフォルダ・ファイル一覧を取得する。
+ * 検索キーワードなしで「今そこに何があるか」をそのまま確認するための機能。
+ */
+export async function browseDirectory(server: ServerConfig, rawRelativePath: string): Promise<BrowseResult> {
+  const safeRelative = sanitizeRelativePath(rawRelativePath ?? "");
+  if (safeRelative === null) throw new UnsafePathError();
+
+  const absPath = resolveSafePath(server.baseDir, safeRelative);
+  if (!absPath) throw new UnsafePathError();
+
+  const client = await connectClient(server, CONNECT_TIMEOUT_MS);
+  try {
+    const list = await client.list(absPath);
+    const entries: BrowseEntry[] = [];
+    let truncated = false;
+
+    for (const entry of list) {
+      if (entry.name === "." || entry.name === "..") continue;
+      if (entries.length >= MAX_BROWSE_ENTRIES) {
+        truncated = true;
+        break;
+      }
+      const entryRelPath = safeRelative ? `${safeRelative}/${entry.name}` : entry.name;
+      entries.push({
+        path: entryRelPath,
+        name: entry.name,
+        size: entry.size,
+        modifiedAt: entry.modifiedAt ? entry.modifiedAt.toISOString() : null,
+        isDirectory: entry.isDirectory,
+        isImage: entry.isFile && isImagePath(entry.name),
+      });
+    }
+
+    entries.sort((a, b) => {
+      if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+      return a.name.localeCompare(b.name, "ja");
+    });
+
+    return { path: safeRelative, entries, truncated };
+  } finally {
+    client.close();
+  }
 }
 
 /**
